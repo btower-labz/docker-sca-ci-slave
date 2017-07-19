@@ -21,6 +21,8 @@ ARG SLAVE_REPO=https://repo.jenkins-ci.org/public/org/jenkins-ci/main/remoting
 USER root
 RUN apt-get update && apt-get install -y apt-utils
 RUN apt-get update && apt-get install -y curl git unzip lsof nano wget curl
+RUN apt-get update && apt-get install -y ant ant-doc ant-optional ant-contrib
+RUN apt-get update && apt-get install -y maven maven-ant-helper
 
 # Install agent script
 COPY jenkins-agent /usr/local/bin/jenkins-agent
@@ -71,5 +73,8 @@ WORKDIR /home/jenkins
 RUN uname -a
 RUN cat /etc/issue
 RUN cat /home/jenkins/swarm-labels.cfg
+
+RUN apt-cache search ant
+RUN apt-cache search maven
 
 ENTRYPOINT ["jenkins-agent"]
