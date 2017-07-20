@@ -7,6 +7,8 @@ MAINTAINER BTower Labz <labz@btower.net>
 ENV HOME /home/jenkins
 ENV SWARM_DESCRIPTION "sca swarm agent"
 
+ARG LABELS=/home/jenkins/swarm-labels.cfg
+
 RUN groupadd -g 10000 jenkins
 RUN useradd -c "Jenkins user" -d $HOME -u 10000 -g 10000 -m jenkins
 LABEL Description="Provides basic sca ci agent, either slave or swarm mode" Vendor="BTower" Version="1.0"
@@ -60,21 +62,22 @@ RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${S
 RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.pom
 RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.pom.md5
 
-# Set labels
-COPY swarm-labels.cfg /home/jenkins/swarm-labels.cfg
-RUN chown jenkins:jenkins /home/jenkins/swarm-labels.cfg
-RUN ls -la /home/jenkins/swarm-labels.cfg
+# Set initial labels
+RUN touch ${LABELS}
+RUN printf " sca" >>${LABELS}
+RUN printf " ant" >>${LABELS}
+RUN printf " maven" >>${LABELS}
+RUN chown jenkins:jenkins ${LABELS}
+RUN ls -la ${LABELS}
 
 USER jenkins
 RUN mkdir /home/jenkins/.jenkins
 VOLUME /home/jenkins/.jenkins
 WORKDIR /home/jenkins
 
+# Show info in build log
 RUN uname -a
 RUN cat /etc/issue
-RUN cat /home/jenkins/swarm-labels.cfg
-
-RUN apt-cache search ant
-RUN apt-cache search maven
+RUN cat ${LABELS}
 
 ENTRYPOINT ["jenkins-agent"]
