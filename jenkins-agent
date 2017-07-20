@@ -51,13 +51,34 @@ else
   SWARM_JAR="-jar /usr/share/jenkins/swarm.jar"
   SLAVE_JAR="-jar /usr/share/jenkins/slave.jar"
 
+  # Jenkins remoting (slave mode)
+  OPT_API="-url http://ci-master:50000"
+  # Jenkins url (swarm mode)
+  OPT_URL="-master http://ci-master:8080"
+
   OPT_LABELS="-labelsFile /home/jenkins/swarm-labels.cfg"
-  OPT_SWARM="-deleteExistingClients"
+  OPT_NAME="-name noname"
+  OPT_EXEC="-executors 3"
+  OPT_USER="-username sca_swarm"
+
+  OPT_RETR_INT="-maxRetryInterval 60"
+  OPT_RETR_COUNT="-retry 15"
+  OPT_RETR_WAIT="-retryInterval 15"
+
+  OPT_SWARM_NOID="-disableClientsUniqueId"
+  OPT_SWARM_MODE="-mode normal"
+  OPT_SWARM_DELEXCLI="-deleteExistingClients"
 
   if [ -z ${AGENT_MODE+x} ]; then
+    # Default to swarm
     AGENT_MODE="SWARM"
   else
-    AGENT_MODE="SLAVE";
+    # Check either SWARM or SLAVE
+    if [ "${AGENT_MODE}" = "SLAVE" ]; then
+      AGENT_MODE="SLAVE";
+    else
+      AGENT_MODE="SWARM"
+    fi;
   fi
 
   if [ -z ${JAVA_OPTS+x} ]; then
@@ -65,38 +86,29 @@ else
   fi
 
   # if -tunnel is not provided try env vars
-  if [[ "$@" != *"-tunnel "* ]]; then
-    if [ ! -z ${AGENT_TUNNEL+x} ]; then
-      TUNNEL="-tunnel $AGENT_TUNNEL"
-    fi
-  fi
+  #if [[ "$@" != *"-tunnel "* ]]; then
+  #  if [ ! -z ${AGENT_TUNNEL+x} ]; then
+  #    TUNNEL="-tunnel $AGENT_TUNNEL"
+  #  fi
+  #fi
 
   if [ ! -z ${MASTER_URL+x} ]; then
-    OPT_URL="-url $MASTER_URL"
-    OPT_MASTER="-master $MASTER_URL"
-  else
-    OPT_URL="-url http://ci-master:50000"
-    OPT_MASTER="-master http://ci-master:8080"
+    OPT_API="-url $MASTER_URL"
+    OPT_URL="-master $MASTER_URL"
   fi
 
   if [ ! -z ${AGENT_USER+x} ]; then
     OPT_USER="-username $AGENT_USER"
-  else
-    OPT_USER="-username sca_swarm"
   fi
 
+  # TODO: check for no spaces
   if [ ! -z ${AGENT_NAME+x} ]; then
-    OPT_NAME="-name $AGENT_NAME"
-  else
-    AGENT_NAME=noname
     OPT_NAME="-name $AGENT_NAME"
   fi
 
   # TODO: check for numbers
   if [ ! -z ${AGENT_EXEC+x} ]; then
     OPT_EXEC="-executors $AGENT_EXEC"
-  else
-    OPT_EXEC="-executors 3"
   fi
 
   #if [ -z "$JNLP_PROTOCOL_OPTS" ]; then
@@ -105,24 +117,34 @@ else
   #fi
 
   # If both required options are defined, do not pass the parameters
-  OPT_SECRET=""
-  if [ ! -z ${AGENT_SECRET+x} ]; then
-    if [[ "$@" != *"${AGENT_SECRET}"* ]]; then
-     OPT_SECRET="${AGENT_SECRET}"
-    else
-      echo "Warning: SECRET is defined twice in command-line arguments and the environment variable"
-    fi
-  fi
+  #OPT_SECRET=""
+  #if [ ! -z ${AGENT_SECRET+x} ]; then
+  #  if [[ "$@" != *"${AGENT_SECRET}"* ]]; then
+  #   OPT_SECRET="${AGENT_SECRET}"
+  #  else
+  #    echo "Warning: SECRET is defined twice in command-line arguments and the environment variable"
+  #  fi
+  #fi
 
-  #TODO: Handle the case when the command-line and Environment variable contain different values.
-  #It is fine it blows up for now since it should lead to an error anyway.
-  #exec java $JAVA_OPTS $JNLP_PROTOCOL_OPTS -cp /usr/share/jenkins/slave.jar hudson.remoting.jnlp.Main -headless $TUNNEL $URL $OPT_JENKINS_SECRET $OPT_JENKINS_AGENT_NAME "$@"
+  # TODO: Handle the case when the command-line and Environment variable contain different values.
+  # It is fine it blows up for now since it should lead to an error anyway.
+  # exec java $JAVA_OPTS $JNLP_PROTOCOL_OPTS -cp /usr/share/jenkins/slave.jar hudson.remoting.jnlp.Main -headless $TUNNEL $URL $OPT_JENKINS_SECRET $OPT_JENKINS_AGENT_NAME "$@"
 
   # -disableSslVerification or -sslFingerprints
   # TODO: NPE FIX
   # https://issues.jenkins-ci.org/browse/JENKINS-43674
   # need to use -disableSslVerification or -sslFingerprints
   NPE_FIX=-disableSslVerification
+  OPT_RETR="${OPT_RETR_INT} ${OPT_RETR_COUNT} ${OPT_RETR_WAIT}"
+  OPT_SWARM="${OPT_SWARM_NOID} ${OPT_SWARM_MODE} ${OPT_SWARM_DELEXCLI}"
 
-  exec java $JAVA_OPTS $SWARM_JAR $NPE_FIX $OPT_MASTER $OPT_SWARM $OPT_NAME $OPT_EXEC $OPT_USER -passwordEnvVariable "SWARM_PWD" $OPT_LABELS
+  # TODO: has to use better way to get container uuid
+  OPT_NAME="${OPT_NAME}-$(hostname)"
+
+  while (true); do
+    echo "executing swarm agent ..."
+    java $JAVA_OPTS $SWARM_JAR $NPE_FIX $OPT_URL $OPT_RETR $OPT_SWARM $OPT_NAME $OPT_EXEC $OPT_USER -passwordEnvVariable "SWARM_PWD" $OPT_LABELS
+    echo "swarm agent terminated ..."
+    sleep 10
+  done;
 fi
