@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -o nounset
+set -o noclobber
+set -o errexit
+set -o pipefail
+
+echo "Jars: ${JAR_PATH}"
+echo "Source: ${SRC_PATH}"
+echo "Repo: ${SLAVE_REPO}"
+echo "Version: ${SLAVE_VERSION}"
+
+# Save slave executable
+curl --create-dirs -sSLo ${JAR_PATH}/swarm.jar ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.jar
+chmod 755 ${JAR_PATH}
+chmod 644 ${JAR_PATH}/swarm.jar
+
+# Save swarm source jar and docs
+mkdir -p ${SRC_PATH}/swarm
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.jar
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.jar.md5
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-javadoc.jar
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-javadoc.jar.md5
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-sources.jar
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-sources.jar.md5
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.pom
+cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.pom.md5
+
+echo "Sources ..."
+ls -la ${SRC_PATH}/swarm
+echo "Jars ..."
+ls -la ${JAR_PATH}
