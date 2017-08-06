@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -o nounset
+set -o noclobber
+set -o errexit
+set -o pipefail
+
+echo "Jars: ${JAR_PATH}"
+echo "Source: ${SRC_PATH}"
+echo "Repo: ${SLAVE_REPO}"
+echo "Version: ${SLAVE_VERSION}"
+
+# Save slave executable
+curl --create-dirs -sSLo ${JAR_PATH}/slave.jar ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.jar
+chmod 755 ${JAR_PATH}
+chmod 644 ${JAR_PATH}/slave.jar
+
+# Save slave source jar and docs
+mkdir -p ${SRC_PATH}/slave
+cd ${SRC_PATH}/slave
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.jar
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.jar.md5
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-sources.jar
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-sources.jar.md5
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-tests.jar
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-tests.jar.md5
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.pom
+wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.pom.md5
+
+echo "Sources ..."
+ls -la ${SRC_PATH}/slave
+echo "Jars ..."
+ls -la ${JAR_PATH}

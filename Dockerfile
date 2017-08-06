@@ -21,63 +21,37 @@ ARG SWARM_REPO=https://repo.jenkins-ci.org/releases/org/jenkins-ci/plugins/swarm
 ARG SLAVE_REPO=https://repo.jenkins-ci.org/public/org/jenkins-ci/main/remoting
 
 USER root
+
+# Install additional software
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 RUN apt-get update && apt-get install -y apt-utils
-RUN apt-get update && apt-get install -y curl git unzip lsof nano wget curl
+RUN apt-get update && apt-get install -y curl git unzip lsof nano wget subversion
 RUN apt-get update && apt-get install -y ant ant-doc ant-optional ant-contrib
 RUN apt-get update && apt-get install -y maven maven-ant-helper
+RUN echo 'debconf debconf/frontend select Dialog' | debconf-set-selections
 
 # Install agent script
 COPY jenkins-agent /usr/local/bin/jenkins-agent
 RUN chmod ugo+x /usr/local/bin/jenkins-agent
 
 # Install slave
-# TODO: get rid of double load
-RUN curl --create-dirs -sSLo ${JAR_PATH}/slave.jar ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.jar \
-  && chmod 755 ${JAR_PATH} \
-  && chmod 644 ${JAR_PATH}/slave.jar
-# Save slave source jar and docs
-RUN mkdir -p ${SRC_PATH}/slave
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.jar
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.jar.md5
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-sources.jar
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-sources.jar.md5
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-tests.jar
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}-tests.jar.md5
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.pom
-RUN cd ${SRC_PATH}/slave && wget ${SLAVE_REPO}/${SLAVE_VERSION}/remoting-${SLAVE_VERSION}.pom.md5
+COPY install-slave /tmp/install-slave
+RUN chmod u+x /tmp/install-slave && /tmp/install-slave
 
 # Install swarm
-# TODO: get rid of double load
-RUN curl --create-dirs -sSLo ${JAR_PATH}/swarm.jar ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.jar \
-  && chmod 755 ${JAR_PATH} \
-  && chmod 644 ${JAR_PATH}/swarm.jar
-# Save swarm source jar and docs
-RUN mkdir -p ${SRC_PATH}/swarm
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.jar
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.jar.md5
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-javadoc.jar
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-javadoc.jar.md5
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-sources.jar
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}-sources.jar.md5
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.pom
-RUN cd ${SRC_PATH}/swarm && wget ${SWARM_REPO}/${SWARM_VERSION}/swarm-client-${SWARM_VERSION}.pom.md5
+COPY install-swarm /tmp/install-swarm
+RUN chmod u+x /tmp/install-swarm && /tmp/install-swarm
 
-# Set initial labels
-RUN touch ${LABELS}
-RUN printf " sca" >>${LABELS}
-RUN printf " ant" >>${LABELS}
-RUN printf " maven" >>${LABELS}
-RUN chown jenkins:jenkins ${LABELS}
-RUN ls -la ${LABELS}
+# Initialize labels
+RUN touch ${LABELS}; printf " sca ant maven" >>${LABELS}; chown jenkins:jenkins ${LABELS}; ls -la ${LABELS};
 
 USER jenkins
+
 RUN mkdir /home/jenkins/.jenkins
 VOLUME /home/jenkins/.jenkins
 WORKDIR /home/jenkins
 
 # Show info in build log
-RUN uname -a
-RUN cat /etc/issue
-RUN cat ${LABELS}
+RUN uname -a; cat /etc/issue; cat ${LABELS}
 
 ENTRYPOINT ["jenkins-agent"]
