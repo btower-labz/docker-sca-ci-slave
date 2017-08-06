@@ -1,4 +1,4 @@
-# docker-sca-ci-slave
+# Jenkins basic slave image for SCA project.
 # TODO: check https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/#run
 
 FROM openjdk:8-jdk
