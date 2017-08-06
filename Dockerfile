@@ -1,17 +1,16 @@
-# Basic sca ci agent image.
-# TODO: check https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/#run
+# Jenkins basic slave image for SCA project.
+# TODO: check https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices
 
 FROM openjdk:8-jdk
-MAINTAINER BTower Labz <labz@btower.net>
+MAINTAINER btower-labz <labz@btower.net>
+
+LABEL Name="docker-sca-ci-slave"
+LABEL Vendor="btower-labz"
+LABEL Version="1.0.0"
+LABEL Description="Provides basic sca ci agent, either slave or swarm mode"
 
 ENV HOME /home/jenkins
 ENV SWARM_DESCRIPTION "sca swarm agent"
-
-ARG LABELS=/home/jenkins/swarm-labels.cfg
-
-RUN groupadd -g 10000 jenkins
-RUN useradd -c "Jenkins user" -d $HOME -u 10000 -g 10000 -m jenkins
-LABEL Description="Provides basic sca ci agent, either slave or swarm mode" Vendor="BTower" Version="1.0"
 
 ARG SLAVE_VERSION=3.9
 ARG SWARM_VERSION=3.4
@@ -19,15 +18,20 @@ ARG JAR_PATH=/usr/share/jenkins
 ARG SRC_PATH=/usr/local/src
 ARG SWARM_REPO=https://repo.jenkins-ci.org/releases/org/jenkins-ci/plugins/swarm-client
 ARG SLAVE_REPO=https://repo.jenkins-ci.org/public/org/jenkins-ci/main/remoting
+ARG LABELS=/home/jenkins/swarm-labels.cfg
 
 USER root
 
+# Add jenkins user
+RUN groupadd -g 10000 jenkins
+RUN useradd -c "Jenkins user" -d $HOME -u 10000 -g 10000 -m jenkins
+
 # Install additional software
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-RUN apt-get update && apt-get install -y apt-utils
-RUN apt-get update && apt-get install -y curl git unzip lsof nano wget subversion
-RUN apt-get update && apt-get install -y ant ant-doc ant-optional ant-contrib
-RUN apt-get update && apt-get install -y maven maven-ant-helper
+RUN apt-get update && apt-get install -y apt-utils && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl git unzip lsof nano wget subversion && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ant ant-doc ant-optional ant-contrib && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y maven maven-ant-helper && rm -rf /var/lib/apt/lists/*
 RUN echo 'debconf debconf/frontend select Dialog' | debconf-set-selections
 
 # Install agent script
