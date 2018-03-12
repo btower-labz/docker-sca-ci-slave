@@ -23,8 +23,8 @@ ARG LABELS=/home/jenkins/swarm-labels.cfg
 USER root
 
 # Add jenkins user
-RUN groupadd -g 10000 jenkins
-RUN useradd -c "Jenkins user" -d $HOME -u 10000 -g 10000 -m jenkins
+RUN groupadd -g 1092310000 jenkins
+RUN useradd -c "Jenkins user" -d $HOME -u 1092310000 -g 1092310000 -m jenkins
 
 # Install additional software
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
